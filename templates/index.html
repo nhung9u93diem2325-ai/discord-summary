@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord 每日小结</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { margin-bottom: 32px; }
+    header h1 { font-size: 24px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+    header p { color: #94a3b8; margin-top: 6px; font-size: 14px; }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3348;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      font-size: 13px; font-weight: 600; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 18px;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 13px; color: #94a3b8; }
+    input, select {
+      background: #0f1117; border: 1px solid #2d3348; border-radius: 8px;
+      padding: 10px 14px; color: #e2e8f0; font-size: 14px; outline: none;
+      transition: border-color 0.2s; width: 100%;
+    }
+    input:focus, select:focus { border-color: #5865f2; }
+    input::placeholder { color: #4a5568; }
+
+    /* 标签切换 */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #0f1117; padding: 4px; border-radius: 10px; }
+    .tab-btn {
+      flex: 1; padding: 9px; border: none; border-radius: 7px; font-size: 13px;
+      font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #1e2130; color: #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 时间范围区域 */
+    .range-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: end; }
+    .range-sep { color: #4a5568; font-size: 13px; padding-bottom: 10px; text-align: center; }
+    .datetime-group { display: flex; flex-direction: column; gap: 6px; }
+    .datetime-row { display: flex; gap: 8px; }
+    .datetime-row input[type="date"] { flex: 1.4; }
+    .datetime-row input[type="time"] { flex: 1; }
+
+    /* 按钮 */
+    .btn-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    button {
+      padding: 10px 22px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-primary  { background: #5865f2; color: #fff; }
+    .btn-primary:hover  { opacity: 0.88; }
+    .btn-purple   { background: #7c3aed; color: #fff; }
+    .btn-purple:hover   { opacity: 0.88; }
+    .btn-secondary { background: #2d3348; color: #e2e8f0; }
+    .btn-secondary:hover { opacity: 0.8; }
+    .btn-success  { background: #22c55e; color: #fff; }
+    .btn-success:hover  { opacity: 0.88; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .schedule-row {
+      display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap;
+    }
+    .schedule-row label { font-size: 13px; color: #94a3b8; white-space: nowrap; }
+    .schedule-row input { width: 110px; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: #14532d; color: #4ade80; }
+    .badge-gray  { background: #1e2130; color: #64748b; border: 1px solid #2d3348; }
+
+    /* 日志 */
+    .log-box {
+      background: #0a0d14; border: 1px solid #1e2130; border-radius: 8px;
+      padding: 14px; height: 200px; overflow-y: auto;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 12px; line-height: 1.7; color: #7dd3fc;
+    }
+    .log-box .err  { color: #f87171; }
+    .log-box .ok   { color: #4ade80; }
+    .log-box .info { color: #7dd3fc; }
+
+    /* 小结历史 */
+    .summary-item {
+      border: 1px solid #2d3348; border-radius: 10px;
+      padding: 18px; margin-bottom: 14px; background: #161926;
+    }
+    .summary-meta {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .summary-date { font-size: 13px; color: #94a3b8; }
+    .summary-tag {
+      font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px;
+      background: #1e3a5f; color: #60a5fa;
+    }
+    .summary-tag.range { background: #3b1f5e; color: #c084fc; }
+    .summary-content { font-size: 14px; line-height: 1.8; color: #e2e8f0; white-space: pre-wrap; }
+    .copy-btn {
+      background: #2d3348; color: #94a3b8; border: none; border-radius: 6px;
+      padding: 4px 12px; font-size: 12px; cursor: pointer;
+    }
+    .copy-btn:hover { background: #3d4460; color: #e2e8f0; }
+    .empty { color: #4a5568; font-size: 14px; text-align: center; padding: 32px 0; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .range-grid { grid-template-columns: 1fr; }
+      .range-sep { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>🤖 Discord 频道小结</h1>
+    <p>自动爬取频道消息，调用 DeepSeek AI 生成内容小结</p>
+  </header>
+
+  <!-- 配置 -->
+  <div class="card">
+    <h2>⚙️ 基础配置</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Discord Token *</label>
+        <input id="token" type="password" placeholder="MTQ4NT...">
+      </div>
+      <div class="form-group">
+        <label>服务器 ID (Guild ID) *</label>
+        <input id="guild_id" placeholder="1485878788658167849">
+      </div>
+      <div class="form-group full">
+        <label>DeepSeek API Key *</label>
+        <input id="api_key" type="password" placeholder="sk-...">
+      </div>
+      <div class="form-group full">
+        <label>频道关键词过滤（留空则抓全部，多个用英文逗号分隔）</label>
+        <input id="keywords" placeholder="english, thai, 攻略">
+      </div>
+    </div>
+  </div>
+
+  <!-- 执行方式标签切换 -->
+  <div class="card">
+    <h2>▶ 执行方式</h2>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('daily')">📅 今日小结</button>
+      <button class="tab-btn" onclick="switchTab('range')">🗓️ 自定义时间范围</button>
+      <button class="tab-btn" onclick="switchTab('schedule')">⏰ 定时任务</button>
+    </div>
+
+    <!-- 今日小结 -->
+    <div id="tab-daily" class="tab-content active">
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:14px;">抓取今天 00:00 至当前时刻的所有频道消息并生成小结。</p>
+      <button class="btn-primary" id="runBtn" onclick="runNow()">▶ 立即执行今日小结</button>
+    </div>
+
+    <!-- 自定义范围 -->
+    <div id="tab-range" class="tab-content">
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:16px;">指定任意时间段，抓取该范围内的消息并生成分析小结。</p>
+      <div class="range-grid">
+        <div class="datetime-group">
+          <label>开始时间</label>
+          <div class="datetime-row">
+            <input type="date" id="date_from">
+            <input type="time" id="time_from" value="00:00">
+          </div>
+        </div>
+        <div class="range-sep">→</div>
+        <div class="datetime-group">
+          <label>结束时间</label>
+          <div class="datetime-row">
+            <input type="date" id="date_to">
+            <input type="time" id="time_to" value="23:59">
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-purple" id="rangeBtn" onclick="runRange()">🗓️ 执行自定义范围分析</button>
+        <button class="btn-secondary" onclick="setToday()" style="font-size:13px;">填入今天</button>
+        <button class="btn-secondary" onclick="setYesterday()" style="font-size:13px;">填入昨天</button>
+        <button class="btn-secondary" onclick="setLastWeek()" style="font-size:13px;">填入近7天</button>
+      </div>
+    </div>
+
+    <!-- 定时任务 -->
+    <div id="tab-schedule" class="tab-content">
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:14px;">设置后每天在指定时间自动执行今日小结（需保持网页服务运行）。</p>
+      <div class="schedule-row">
+        <label>每天执行时间：</label>
+        <input id="scheduleTime" type="time" value="19:00" style="width:110px;">
+        <button class="btn-success" onclick="setSchedule()">设置定时</button>
+        <span id="scheduleBadge" class="badge badge-gray">未设置</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 日志 -->
+  <div class="card">
+    <h2>📋 运行日志</h2>
+    <div class="log-box" id="logBox"><span class="info">等待执行...</span></div>
+    <div style="margin-top:10px;">
+      <button class="btn-secondary" onclick="clearLog()" style="font-size:12px;padding:6px 14px;">清空日志</button>
+    </div>
+  </div>
+
+  <!-- 小结历史 -->
+  <div class="card">
+    <h2>📄 小结历史</h2>
+    <div id="summaryList"><p class="empty">暂无小结，点击执行按钮生成</p></div>
+  </div>
+
+</div>
+
+<script>
+  let polling = false;
+
+  function switchTab(name) {
+    document.querySelectorAll(".tab-btn").forEach((b, i) => {
+      b.classList.toggle("active", ["daily","range","schedule"][i] === name);
+    });
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+  }
+
+  function getConfig() {
+    return {
+      token:    document.getElementById("token").value.trim(),
+      guild_id: document.getElementById("guild_id").value.trim(),
+      api_key:  document.getElementById("api_key").value.trim(),
+      keywords: document.getElementById("keywords").value.trim(),
+    };
+  }
+
+  function validateBase() {
+    const c = getConfig();
+    if (!c.token || !c.guild_id || !c.api_key) {
+      alert("请先填写基础配置：Token、服务器ID、API Key");
+      return false;
+    }
+    return true;
+  }
+
+  async function runNow() {
+    if (!validateBase()) return;
+    document.getElementById("runBtn").disabled = true;
+    document.getElementById("logBox").innerHTML = "";
+    const resp = await fetch("/api/run", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(getConfig())
+    });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); document.getElementById("runBtn").disabled = false; return; }
+    startPolling("runBtn");
+  }
+
+  async function runRange() {
+    if (!validateBase()) return;
+    const date_from = document.getElementById("date_from").value;
+    const date_to   = document.getElementById("date_to").value;
+    if (!date_from || !date_to) { alert("请填写开始和结束日期"); return; }
+
+    document.getElementById("rangeBtn").disabled = true;
+    document.getElementById("logBox").innerHTML = "";
+
+    const body = {
+      ...getConfig(),
+      date_from,
+      time_from: document.getElementById("time_from").value,
+      date_to,
+      time_to: document.getElementById("time_to").value,
+    };
+    const resp = await fetch("/api/run_range", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.error) { alert(data.error); document.getElementById("rangeBtn").disabled = false; return; }
+    startPolling("rangeBtn");
+  }
+
+  async function setSchedule() {
+    if (!validateBase()) return;
+    const body = { ...getConfig(), time: document.getElementById("scheduleTime").value };
+    const resp = await fetch("/api/schedule", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    const badge = document.getElementById("scheduleBadge");
+    badge.textContent = `每天 ${data.time} 自动执行`;
+    badge.className = "badge badge-green";
+  }
+
+  function startPolling(btnId) {
+    if (polling) return;
+    polling = true;
+    const timer = setInterval(async () => {
+      await refreshLogs();
+      await refreshSummaries();
+      const logs = document.getElementById("logBox").innerText;
+      if (logs.includes("小结生成完成") || logs.includes("任务终止") || logs.includes("分析失败")) {
+        clearInterval(timer);
+        polling = false;
+        document.getElementById(btnId).disabled = false;
+      }
+    }, 1500);
+  }
+
+  async function refreshLogs() {
+    const resp = await fetch("/api/logs");
+    const data = await resp.json();
+    const box  = document.getElementById("logBox");
+    box.innerHTML = data.logs.map(line => {
+      let cls = "info";
+      if (line.includes("❌")) cls = "err";
+      else if (line.includes("✅")) cls = "ok";
+      return `<div class="${cls}">${esc(line)}</div>`;
+    }).join("") || '<span class="info">等待执行...</span>';
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function refreshSummaries() {
+    const resp = await fetch("/api/summaries");
+    const data = await resp.json();
+    const list = document.getElementById("summaryList");
+    if (!data.summaries.length) {
+      list.innerHTML = '<p class="empty">暂无小结，点击执行按钮生成</p>';
+      return;
+    }
+    list.innerHTML = data.summaries.map(s => {
+      const isRange = s.type === "range";
+      const tag = isRange
+        ? '<span class="summary-tag range">自定义范围</span>'
+        : '<span class="summary-tag">今日小结</span>';
+      return `
+        <div class="summary-item">
+          <div class="summary-meta">
+            <span class="summary-date">📅 ${esc(s.date)} ${s.time} ${tag}</span>
+            <button class="copy-btn" onclick='copyText(${JSON.stringify(s.content)})'>复制</button>
+          </div>
+          <div class="summary-content">${esc(s.content)}</div>
+        </div>`;
+    }).join("");
+  }
+
+  // 快捷日期填入
+  function fmt(d) { return d.toISOString().split("T")[0]; }
+  function setToday() {
+    const t = fmt(new Date());
+    document.getElementById("date_from").value = t;
+    document.getElementById("date_to").value   = t;
+    document.getElementById("time_from").value = "00:00";
+    document.getElementById("time_to").value   = "23:59";
+  }
+  function setYesterday() {
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const t = fmt(d);
+    document.getElementById("date_from").value = t;
+    document.getElementById("date_to").value   = t;
+    document.getElementById("time_from").value = "00:00";
+    document.getElementById("time_to").value   = "23:59";
+  }
+  function setLastWeek() {
+    const end   = new Date();
+    const start = new Date(); start.setDate(end.getDate() - 6);
+    document.getElementById("date_from").value = fmt(start);
+    document.getElementById("date_to").value   = fmt(end);
+    document.getElementById("time_from").value = "00:00";
+    document.getElementById("time_to").value   = "23:59";
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => alert("已复制到剪贴板"));
+  }
+  function clearLog() {
+    document.getElementById("logBox").innerHTML = '<span class="info">日志已清空</span>';
+  }
+  function esc(str) {
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  refreshSummaries();
+</script>
+</body>
+</html>
