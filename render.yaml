@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: discord-daily-summary
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free
