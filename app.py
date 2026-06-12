@@ -124,8 +124,7 @@ def analyze_with_deepseek(api_key: str, title_date: str, channels_data: dict,
    泰语频道：玩家自主讨论角色抽取与游戏武器装备相关话题
    英语&泰语攻略讨论频道暂无玩家发言
 3. 如果频道没有消息，注明"暂无玩家发言"
-4. 语言简洁，每个频道一句话概括核心话题
-5. 直接输出小结内容，不要添加额外说明
+4. 语言简洁
 """
     response = client.chat.completions.create(
         model="deepseek-chat",
